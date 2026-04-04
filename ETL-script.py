@@ -53,9 +53,11 @@ def transform(data_to_transform):
         "city.country": "country",
         "city.population": "population"
     })
+    
+    transformed_data["temp_fahrenheit"] = (transformed_data["temperature"] * 1.8) + 32
 
     cleaned_data = transformed_data[[
-        "city", "country", "datetime", "temperature", "weather_desc", 
+        "city", "country", "datetime", "temperature", "temp_fahrenheit", "weather_desc", 
         "city_id", "humidity", "temp_min", "temp_max", "pressure", 
         "sea_level", "population"
     ]]
