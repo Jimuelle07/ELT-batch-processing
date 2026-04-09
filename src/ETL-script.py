@@ -2,11 +2,9 @@ import requests
 import API
 import json
 import pandas as pd
+from pyspark.sql import SparkSession
+from pyspark.sql.types import StructType, StructField, StringType, TimestampType, FloatType, IntegerType
 
-
-# if city_name:
-#    with open(f"{city_name}_weather_data.json", "w") as f:
-#        json.dump(data, f, indent=3)
 
 def extract(cities):
 
@@ -123,14 +121,69 @@ def transform(data_to_transform):
         "weather_desc", "city_id",
         "humidity", "temp_min",
         "temp_max", "pressure"
-    ]]
+    ]].copy()
+
+    cleaned_data["datetime"] = pd.to_datetime(cleaned_data["datetime"])
     
     return cleaned_data
 
 
+def load(loaded_sparkdata):
+    
+    spark = (
+        SparkSession.builder
+            .master("local[*]")
+            .appName("ELT-Batch-Processing")
+            .config("spark.jars", "./postgresql-42.7.9.jar")
+            .getOrCreate()
+    )
+
+    schema = StructType([
+        StructField("city", StringType(), False),
+        StructField("country", StringType(), False),
+        StructField("datetime", TimestampType(), False),
+        StructField("weather_main", StringType(), False),
+        StructField("temperature", FloatType(), False),
+        StructField("temp_fahrenheit", FloatType(), False),
+        StructField("status", StringType(), True),
+        StructField("cloud_percentage", IntegerType(), True), 
+        StructField("cloud_label", StringType(), False),
+        StructField("Solar_Power_level", StringType(), True),
+        StructField("wind_speed", FloatType(), False),
+        StructField("wind_degrees", IntegerType(), False),
+        StructField("wind_direction", StringType(), False),
+        StructField("weather_desc", StringType(), False),
+        StructField("city_id", IntegerType(), False),
+        StructField("humidity", IntegerType(), False),
+        StructField("temp_min", FloatType(), False),
+        StructField("temp_max", FloatType(), False),
+        StructField("pressure", IntegerType(), False)
+    ])
+
+    transformed_to_spark = spark.createDataFrame(loaded_sparkdata, schema=schema)
+
+    db_url = "jdbc:postgresql://localhost:5432/WeatherDB"
+    db_properties = {
+        "user" : "postgres",
+        "password" : API.postgresql_password,
+        "driver" : "org.postgresql.Driver"
+    }
+
+    transformed_to_spark.write.jdbc(url=db_url, table="weather_report", mode="append", properties=db_properties)
+
+    print("succesfully loaded to postgresql")
+
+    spark.stop()
+    
 
 
+if __name__ == "__main__":
+    print("Starting ELT process...")
 
+    raw_data = extract("Manila")
 
+    cleaned_df = transform(raw_data)
 
+    load(cleaned_df)
 
+    print("Process Complete!")

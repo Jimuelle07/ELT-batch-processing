@@ -1,11 +1,9 @@
 
 # START
 
-FROM python:3.12-slim AS base
+FROM apache/spark-py:latest AS base
 
-WORKDIR /ETL-BATCH-PROCESSING
+USER root
 
-COPY . /ETL-BATCH-PROCESSING
 
-CMD etl-batch-data-pipelines
 
