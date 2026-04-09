@@ -148,7 +148,7 @@ def load(loaded_sparkdata):
         StructField("status", StringType(), True),
         StructField("cloud_percentage", IntegerType(), True), 
         StructField("cloud_label", StringType(), False),
-        StructField("Solar_Power_level", StringType(), True),
+        StructField("Solar_Power_Level", StringType(), True),
         StructField("wind_speed", FloatType(), False),
         StructField("wind_degrees", IntegerType(), False),
         StructField("wind_direction", StringType(), False),
