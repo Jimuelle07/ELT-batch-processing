@@ -1,14 +1,19 @@
 import requests
-import API
+import os
+from dotenv import load_dotenv
 import json
 import pandas as pd
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType, StructField, StringType, TimestampType, FloatType, IntegerType
 
 
+load_dotenv()
+weather_api_key = os.getenv("WEATHER_API_KEY")
+postgresql_password = os.getenv("POSTGRESQL_PASSWORD")
+
 def extract(cities):
 
-        url = f"http://api.openweathermap.org/data/2.5/forecast?q={cities}&appid={API.weather_api_key}&units=metric"
+        url = f"http://api.openweathermap.org/data/2.5/forecast?q={cities}&appid={weather_api_key}&units=metric"
         weather_data_response = requests.get(url)
 
         try:
@@ -165,7 +170,7 @@ def load(loaded_sparkdata):
     db_url = "jdbc:postgresql://localhost:5432/WeatherDB"
     db_properties = {
         "user" : "postgres",
-        "password" : API.postgresql_password,
+        "password" : postgresql_password,
         "driver" : "org.postgresql.Driver"
     }
 
