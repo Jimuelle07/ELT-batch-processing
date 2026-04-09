@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 import json
 import pandas as pd
 from pyspark.sql import SparkSession
-from pyspark.sql.types import StructType, StructField, StringType, TimestampType, FloatType, IntegerType
+from pyspark.sql.types import StructType, StructField, StringType, TimestampType, FloatType, LongType, DoubleType
 
 
 load_dotenv()
@@ -13,28 +13,25 @@ postgresql_password = os.getenv("POSTGRESQL_PASSWORD")
 
 def extract(cities):
 
-        url = f"http://api.openweathermap.org/data/2.5/forecast?q={cities}&appid={weather_api_key}&units=metric"
-        weather_data_response = requests.get(url)
+    url = f"http://api.openweathermap.org/data/2.5/forecast?q={cities}&appid={weather_api_key}&units=metric"
 
-        try:
-            extracted_data = weather_data_response.json()
-            
-        except json.JSONDecodeError as e:
-                print(f"error in data handling {e}")
+    response = requests.get(url)
 
-        return extracted_data
+    response.raise_for_status()
+
+    return response.json()
 
 
 def transform(data_to_transform):
 
-    def get_solar_panel_status(temp):
-        if temp >= 95:
+    def get_solar_panel_status(temp_f):
+        if temp_f >= 90:
             return "Exceptional"
-        elif temp >= 80:
+        elif temp_f >= 80:
             return "High"
-        elif temp >= 60:
+        elif temp_f >= 70:
             return "Average"
-        elif temp >= 40:
+        elif temp_f >= 50:
             return "Budget"
         else:
             return "Sub-par"
@@ -111,7 +108,7 @@ def transform(data_to_transform):
         lambda x: "Sunny" if x <= 20 else ("Partly Cloudy" if x <= 60 else "Overcast")
     )
 
-    transformed_data["Solar_Power_Level"] = transformed_data["temperature"].apply(get_solar_panel_status)
+    transformed_data["Solar_Power_Level"] = transformed_data["temp_fahrenheit"].apply(get_solar_panel_status)
 
     transformed_data["wind_direction"] = transformed_data["wind_degrees"].apply(get_wind_direction) 
 
@@ -148,21 +145,21 @@ def load(loaded_sparkdata):
         StructField("country", StringType(), False),
         StructField("datetime", TimestampType(), False),
         StructField("weather_main", StringType(), False),
-        StructField("temperature", FloatType(), False),
+        StructField("temperature", DoubleType(), False),
         StructField("temp_fahrenheit", FloatType(), False),
         StructField("status", StringType(), True),
-        StructField("cloud_percentage", IntegerType(), True), 
+        StructField("cloud_percentage", LongType(), True), 
         StructField("cloud_label", StringType(), False),
         StructField("Solar_Power_Level", StringType(), True),
         StructField("wind_speed", FloatType(), False),
-        StructField("wind_degrees", IntegerType(), False),
+        StructField("wind_degrees", LongType(), False),
         StructField("wind_direction", StringType(), False),
         StructField("weather_desc", StringType(), False),
-        StructField("city_id", IntegerType(), False),
-        StructField("humidity", IntegerType(), False),
+        StructField("city_id", LongType(), False),
+        StructField("humidity", LongType(), False),
         StructField("temp_min", FloatType(), False),
         StructField("temp_max", FloatType(), False),
-        StructField("pressure", IntegerType(), False)
+        StructField("pressure", LongType(), False)
     ])
 
     transformed_to_spark = spark.createDataFrame(loaded_sparkdata, schema=schema)
